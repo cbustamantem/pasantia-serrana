@@ -1,6 +1,13 @@
 <?php
 
 /* =========================
+ * MOSTRAR ERRORES
+ * ========================= */
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+/* =========================
  * CONFIGURACIÓN
  * ========================= */
 define('DB_HOST', 'localhost');
@@ -23,42 +30,42 @@ function conectarBD() {
 }
 
 /* =========================
- * FUNCIÓN LISTAR ALUMNOS
+ * FUNCIÓN LISTAR CURSOS
  * ========================= */
-function listarAlumnos() {
+function listarCursos() {
     $conexion = conectarBD();
 
-    $sql = "SELECT cedula, nombre, apellido FROM alumnos";
+    $sql = "SELECT id_curso, descripcion FROM cursos";
     $resultado = $conexion->query($sql);
 
     if (!$resultado) {
         die("Error en la consulta: " . $conexion->error);
     }
 
-    $alumnos = [];
+    $cursos = [];
 
     while ($fila = $resultado->fetch_assoc()) {
-        $alumnos[] = $fila;
+        $cursos[] = $fila;
     }
 
     $conexion->close();
-    return $alumnos;
+    return $cursos;
 }
 
 /* =========================
- * FUNCIÓN ELIMINAR ALUMNO POR CÉDULA
+ * FUNCIÓN ELIMINAR CURSO POR ID
  * ========================= */
-function eliminarAlumno($cedula) {
+function eliminarCurso($id_curso) {
     $conexion = conectarBD();
 
-    $sql = "DELETE FROM alumnos WHERE cedula = ?";
+    $sql = "DELETE FROM cursos WHERE id_curso = ?";
 
     $stmt = $conexion->prepare($sql);
     if (!$stmt) {
         die("Error al preparar consulta: " . $conexion->error);
     }
 
-    $stmt->bind_param("s", $cedula);
+    $stmt->bind_param("i", $id_curso);
 
     $resultado = $stmt->execute();
 
@@ -74,13 +81,13 @@ function eliminarAlumno($cedula) {
 $mensaje = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['accion']) && $_POST['accion'] === 'eliminar') {
-    $cedula = trim($_POST['cedula'] ?? '');
+    $id_curso = trim($_POST['id_curso'] ?? '');
 
-    if ($cedula !== '') {
-        if (eliminarAlumno($cedula)) {
-            $mensaje = "✅ Alumno eliminado correctamente.";
+    if ($id_curso !== '') {
+        if (eliminarCurso($id_curso)) {
+            $mensaje = "✅ Curso eliminado correctamente.";
         } else {
-            $mensaje = "❌ Error al eliminar el alumno.";
+            $mensaje = "❌ Error al eliminar el curso.";
         }
     }
 }
@@ -88,7 +95,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['accion']) && $_POST['
 /* =========================
  * USO DEL LISTADO
  * ========================= */
-$alumnos = listarAlumnos();
+$cursos = listarCursos();
 
 ?>
 
@@ -96,7 +103,7 @@ $alumnos = listarAlumnos();
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Listado de Alumnos</title>
+    <title>Listado de Cursos</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -175,8 +182,8 @@ $alumnos = listarAlumnos();
 <body>
 
 <div class="header">
-    <h2>Listado de Alumnos</h2>
-    <a href="registrarAlumnos.php" class="btn-agregar">+ Agregar Alumno</a>
+    <h2>Listado de Cursos</h2>
+    <a href="registrarCursos.php" class="btn-agregar">+ Agregar Curso</a>
 </div>
 
 <?php if ($mensaje): ?>
@@ -188,25 +195,23 @@ $alumnos = listarAlumnos();
 <table>
     <thead>
         <tr>
-            <th>Cédula</th>
-            <th>Nombre</th>
-            <th>Apellido</th>
+            <th>ID Curso</th>
+            <th>Descripción</th>
             <th>Acciones</th>
         </tr>
     </thead>
     <tbody>
-        <?php if (count($alumnos) > 0): ?>
-            <?php foreach ($alumnos as $alumno): ?>
+        <?php if (count($cursos) > 0): ?>
+            <?php foreach ($cursos as $curso): ?>
                 <tr>
-                    <td><?= htmlspecialchars($alumno['cedula']) ?></td>
-                    <td><?= htmlspecialchars($alumno['nombre']) ?></td>
-                    <td><?= htmlspecialchars($alumno['apellido']) ?></td>
+                    <td><?= htmlspecialchars($curso['id_curso']) ?></td>
+                    <td><?= htmlspecialchars($curso['descripcion']) ?></td>
                     <td>
-                        <a href="editarAlumnos.php?cedula=<?= urlencode($alumno['cedula']) ?>" class="btn-editar">Editar</a>
+                        <a href="editarCursos.php?id_curso=<?= urlencode($curso['id_curso']) ?>" class="btn-editar">Editar</a>
                         
-                        <form style="display: inline;" method="POST" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este alumno?');">
+                        <form style="display: inline;" method="POST" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este curso?');">
                             <input type="hidden" name="accion" value="eliminar">
-                            <input type="hidden" name="cedula" value="<?= htmlspecialchars($alumno['cedula']) ?>">
+                            <input type="hidden" name="id_curso" value="<?= htmlspecialchars($curso['id_curso']) ?>">
                             <button type="submit" class="btn-eliminar">Eliminar</button>
                         </form>
                     </td>
@@ -214,7 +219,7 @@ $alumnos = listarAlumnos();
             <?php endforeach; ?>
         <?php else: ?>
             <tr>
-                <td colspan="4" style="text-align: center;">No hay alumnos registrados.</td>
+                <td colspan="3" style="text-align: center;">No hay cursos registrados.</td>
             </tr>
         <?php endif; ?>
     </tbody>
@@ -222,4 +227,3 @@ $alumnos = listarAlumnos();
 
 </body>
 </html>
-
