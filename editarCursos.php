@@ -78,8 +78,13 @@ $curso = null;
 // Obtener ID del curso desde GET
 $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
+// DEBUG
+echo "<!-- DEBUG: ID recibido = " . $id . " -->";
+
 if ($id > 0) {
     $curso = obtenerCurso($id);
+    // DEBUG
+    echo "<!-- DEBUG: Curso obtenido = " . json_encode($curso) . " -->";
     if (!$curso) {
         $mensaje = "❌ Curso no encontrado.";
     }
