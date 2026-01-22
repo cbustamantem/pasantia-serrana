@@ -1,0 +1,1 @@
+CREATE TABLE CURSOS (id_curso INTEGER AUTO_INCREMENT PRIMARY KEY, descripcion varchar(100));
