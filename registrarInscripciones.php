@@ -38,7 +38,7 @@ function obtenerCursos() {
     $resultado = $conexion->query($sql);
 
     if (!$resultado) {
-        die("Error en la consulta: " . $conexion->error);
+        die("Error en la consulta de cursos: " . $conexion->error);
     }
 
     $cursos = [];
@@ -60,7 +60,7 @@ function obtenerMaterias() {
     $resultado = $conexion->query($sql);
 
     if (!$resultado) {
-        die("Error en la consulta: " . $conexion->error);
+        die("Error en la consulta de materias: " . $conexion->error);
     }
 
     $materias = [];
@@ -82,7 +82,7 @@ function obtenerProfesores() {
     $resultado = $conexion->query($sql);
 
     if (!$resultado) {
-        die("Error en la consulta: " . $conexion->error);
+        die("Error en la consulta de profesores: " . $conexion->error);
     }
 
     $profesores = [];
@@ -158,35 +158,54 @@ $profesores = obtenerProfesores();
         body {
             font-family: Arial, sans-serif;
         }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
         form {
-            width: 500px;
-            margin: 0 auto;
+            width: 100%;
         }
         label {
             display: block;
             margin-top: 15px;
             font-weight: bold;
+            color: #333;
         }
         select, input {
             width: 100%;
-            padding: 8px;
+            padding: 10px;
             margin-top: 5px;
             border: 1px solid #ddd;
             border-radius: 4px;
             box-sizing: border-box;
+            font-size: 14px;
+        }
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
         }
         button {
             margin-top: 20px;
-            padding: 10px 15px;
+            padding: 10px 20px;
             margin-right: 10px;
             cursor: pointer;
             border: none;
             border-radius: 4px;
+            font-weight: bold;
+            font-size: 14px;
         }
         button[type="submit"] {
             background-color: #4CAF50;
             color: white;
-            font-weight: bold;
         }
         button[type="submit"]:hover {
             background-color: #45a049;
@@ -194,7 +213,6 @@ $profesores = obtenerProfesores();
         button[type="reset"] {
             background-color: #6c757d;
             color: white;
-            font-weight: bold;
         }
         button[type="reset"]:hover {
             background-color: #5a6268;
@@ -202,7 +220,7 @@ $profesores = obtenerProfesores();
         .mensaje {
             margin-top: 15px;
             font-weight: bold;
-            padding: 10px;
+            padding: 12px;
             border-radius: 4px;
         }
         .mensaje.exito {
@@ -215,63 +233,105 @@ $profesores = obtenerProfesores();
             color: #721c24;
             border: 1px solid #f5c6cb;
         }
+        .mensaje.aviso {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
         .button-group {
             margin-top: 20px;
+        }
+        .info-debug {
+            background-color: #e8f4f8;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 15px;
+            font-size: 12px;
+            color: #666;
         }
     </style>
 </head>
 <body>
 
-<h2>Registrar Nueva Inscripción</h2>
+<div class="container">
+    <h2>Registrar Nueva Inscripción</h2>
 
-<?php if ($mensaje): ?>
-    <div class="mensaje <?= strpos($mensaje, '✅') !== false ? 'exito' : 'error' ?>">
-        <?= htmlspecialchars($mensaje) ?>
-    </div>
-<?php endif; ?>
+    <?php if ($mensaje): ?>
+        <div class="mensaje <?= strpos($mensaje, '✅') !== false ? 'exito' : 'error' ?>">
+            <?= htmlspecialchars($mensaje) ?>
+        </div>
+    <?php endif; ?>
 
-<form method="POST" action="">
-    <label for="id_cursoX">
-        Curso:
-        <select name="id_cursoX" id="id_cursoX" required>
-            <option value="">-- Selecciona un curso --</option>
-            <?php foreach ($cursos as $curso): ?>
-                <option value="<?= $curso['id_curso'] ?>">
-                    <?= htmlspecialchars($curso['descripcion']) ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-    </label>
+    <?php if (empty($profesores)): ?>
+        <div class="mensaje aviso">
+            ⚠️ No hay profesores registrados. Por favor, registra profesores primero.
+        </div>
+    <?php endif; ?>
 
-    <label for="id_materiaX">
-        Materia:
-        <select name="id_materiaX" id="id_materiaX" required>
-            <option value="">-- Selecciona una materia --</option>
-            <?php foreach ($materias as $materia): ?>
-                <option value="<?= $materia['id_materia'] ?>">
-                    <?= htmlspecialchars($materia['descripcion']) ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-    </label>
+    <?php if (empty($cursos)): ?>
+        <div class="mensaje aviso">
+            ⚠️ No hay cursos registrados. Por favor, registra cursos primero.
+        </div>
+    <?php endif; ?>
 
-    <label for="cedula_profesorX">
-        Profesor:
-        <select name="cedula_profesorX" id="cedula_profesorX" required>
-            <option value="">-- Selecciona un profesor --</option>
-            <?php foreach ($profesores as $profesor): ?>
-                <option value="<?= htmlspecialchars($profesor['cedula']) ?>">
-                    <?= htmlspecialchars($profesor['nombre'] . ' ' . $profesor['apellido']) ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-    </label>
+    <?php if (empty($materias)): ?>
+        <div class="mensaje aviso">
+            ⚠️ No hay materias registradas. Por favor, registra materias primero.
+        </div>
+    <?php endif; ?>
 
-    <div class="button-group">
-        <button type="submit">Registrar</button>
-        <button type="reset">Limpiar</button>
-    </div>
-</form>
+    <?php if (!empty($profesores) && !empty($cursos) && !empty($materias)): ?>
+        <form method="POST" action="">
+            <label for="id_cursoX">
+                Curso:
+                <select name="id_cursoX" id="id_cursoX" required>
+                    <option value="">-- Selecciona un curso --</option>
+                    <?php foreach ($cursos as $curso): ?>
+                        <option value="<?= $curso['id_curso'] ?>">
+                            <?= htmlspecialchars($curso['descripcion']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+
+            <label for="id_materiaX">
+                Materia:
+                <select name="id_materiaX" id="id_materiaX" required>
+                    <option value="">-- Selecciona una materia --</option>
+                    <?php foreach ($materias as $materia): ?>
+                        <option value="<?= $materia['id_materia'] ?>">
+                            <?= htmlspecialchars($materia['descripcion']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+
+            <label for="cedula_profesorX">
+                Profesor:
+                <select name="cedula_profesorX" id="cedula_profesorX" required>
+                    <option value="">-- Selecciona un profesor --</option>
+                    <?php foreach ($profesores as $profesor): ?>
+                        <option value="<?= htmlspecialchars($profesor['cedula']) ?>">
+                            <?= htmlspecialchars($profesor['nombre'] . ' ' . $profesor['apellido']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+
+            <div class="button-group">
+                <button type="submit">Registrar</button>
+                <button type="reset">Limpiar</button>
+            </div>
+        </form>
+
+        <div class="info-debug">
+            <strong>Información de depuración:</strong><br>
+            Cursos disponibles: <?= count($cursos) ?><br>
+            Materias disponibles: <?= count($materias) ?><br>
+            Profesores disponibles: <?= count($profesores) ?>
+        </div>
+    <?php endif; ?>
+</div>
 
 </body>
 </html>
