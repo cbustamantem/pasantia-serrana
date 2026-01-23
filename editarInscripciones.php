@@ -28,7 +28,7 @@ function conectarBD() {
 function obtenerInscripcion($id_inscripcion) {
     $conexion = conectarBD();
 
-    $sql = "SELECT id_inscripcion, id_curso, id_materia, id_profesor FROM inscripciones WHERE id_inscripcion = ?";
+    $sql = "SELECT id_inscripcion, id_curso, id_materia, cedula_profesor FROM inscripciones WHERE id_inscripcion = ?";
 
     $stmt = $conexion->prepare($sql);
     if (!$stmt) {
@@ -96,7 +96,7 @@ function obtenerMaterias() {
 function obtenerProfesores() {
     $conexion = conectarBD();
 
-    $sql = "SELECT id_profesor, nombre, apellido FROM profesores ORDER BY nombre, apellido";
+    $sql = "SELECT cedula, nombre, apellido FROM profesores ORDER BY nombre, apellido";
     $resultado = $conexion->query($sql);
 
     if (!$resultado) {
@@ -115,17 +115,17 @@ function obtenerProfesores() {
 /* =========================
  * FUNCIÓN ACTUALIZAR INSCRIPCIÓN
  * ========================= */
-function actualizarInscripcion($id_inscripcion, $id_curso, $id_materia, $id_profesor) {
+function actualizarInscripcion($id_inscripcion, $id_curso, $id_materia, $cedula_profesor) {
     $conexion = conectarBD();
 
-    $sql = "UPDATE inscripciones SET id_curso = ?, id_materia = ?, id_profesor = ? WHERE id_inscripcion = ?";
+    $sql = "UPDATE inscripciones SET id_curso = ?, id_materia = ?, cedula_profesor = ? WHERE id_inscripcion = ?";
 
     $stmt = $conexion->prepare($sql);
     if (!$stmt) {
         die("Error al preparar consulta: " . $conexion->error);
     }
 
-    $stmt->bind_param("iiii", $id_curso, $id_materia, $id_profesor, $id_inscripcion);
+    $stmt->bind_param("issi", $id_curso, $cedula_profesor, $id_materia, $id_inscripcion);
 
     $resultado = $stmt->execute();
 
@@ -157,12 +157,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $id_inscripcion = intval($_POST['id_inscripcionX'] ?? 0);
     $id_curso = intval($_POST['id_cursoX'] ?? 0);
     $id_materia = intval($_POST['id_materiaX'] ?? 0);
-    $id_profesor = intval($_POST['id_profesorX'] ?? 0);
+    $cedula_profesor = trim($_POST['cedula_profesorX'] ?? '');
 
-    if ($id_inscripcion === 0 || $id_curso === 0 || $id_materia === 0 || $id_profesor === 0) {
+    if ($id_inscripcion === 0 || $id_curso === 0 || $id_materia === 0 || $cedula_profesor === '') {
         $mensaje = "⚠️ Todos los campos son obligatorios.";
     } else {
-        if (actualizarInscripcion($id_inscripcion, $id_curso, $id_materia, $id_profesor)) {
+        if (actualizarInscripcion($id_inscripcion, $id_curso, $id_materia, $cedula_profesor)) {
             $mensaje = "✅ Inscripción actualizada correctamente.";
             $inscripcion = obtenerInscripcion($id_inscripcion);
         } else {
@@ -291,13 +291,13 @@ $profesores = obtenerProfesores();
             </select>
         </label>
 
-        <label for="id_profesorX">
+        <label for="cedula_profesorX">
             Profesor:
-            <select name="id_profesorX" id="id_profesorX" required>
+            <select name="cedula_profesorX" id="cedula_profesorX" required>
                 <option value="">-- Selecciona un profesor --</option>
                 <?php foreach ($profesores as $profesor): ?>
-                    <option value="<?= $profesor['id_profesor'] ?>"
-                        <?= $profesor['id_profesor'] == $inscripcion['id_profesor'] ? 'selected' : '' ?>>
+                    <option value="<?= htmlspecialchars($profesor['cedula']) ?>"
+                        <?= $profesor['cedula'] == $inscripcion['cedula_profesor'] ? 'selected' : '' ?>>
                         <?= htmlspecialchars($profesor['nombre'] . ' ' . $profesor['apellido']) ?>
                     </option>
                 <?php endforeach; ?>

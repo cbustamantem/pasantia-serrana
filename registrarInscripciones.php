@@ -23,53 +23,86 @@ function conectarBD() {
 }
 
 /* =========================
- * FUNCIÓN LISTAR INSCRIPCIONES CON JOINS
+ * FUNCIÓN OBTENER CURSOS
  * ========================= */
-function listarInscripciones() {
+function obtenerCursos() {
     $conexion = conectarBD();
 
-    $sql = "SELECT 
-                i.id_inscripcion,
-                c.descripcion AS curso,
-                m.descripcion AS materia,
-                p.nombre AS profesor_nombre,
-                p.apellido AS profesor_apellido
-            FROM inscripciones i
-            INNER JOIN cursos c ON i.id_curso = c.id_curso
-            INNER JOIN materias m ON i.id_materia = m.id_materia
-            INNER JOIN profesores p ON i.id_profesor = p.id_profesor
-            ORDER BY c.descripcion, m.descripcion";
-    
+    $sql = "SELECT id_curso, descripcion FROM cursos ORDER BY descripcion";
     $resultado = $conexion->query($sql);
 
     if (!$resultado) {
         die("Error en la consulta: " . $conexion->error);
     }
 
-    $inscripciones = [];
-
+    $cursos = [];
     while ($fila = $resultado->fetch_assoc()) {
-        $inscripciones[] = $fila;
+        $cursos[] = $fila;
     }
 
     $conexion->close();
-    return $inscripciones;
+    return $cursos;
 }
 
 /* =========================
- * FUNCIÓN ELIMINAR INSCRIPCIÓN
+ * FUNCIÓN OBTENER MATERIAS
  * ========================= */
-function eliminarInscripcion($id_inscripcion) {
+function obtenerMaterias() {
     $conexion = conectarBD();
 
-    $sql = "DELETE FROM inscripciones WHERE id_inscripcion = ?";
+    $sql = "SELECT id_materia, descripcion FROM materias ORDER BY descripcion";
+    $resultado = $conexion->query($sql);
+
+    if (!$resultado) {
+        die("Error en la consulta: " . $conexion->error);
+    }
+
+    $materias = [];
+    while ($fila = $resultado->fetch_assoc()) {
+        $materias[] = $fila;
+    }
+
+    $conexion->close();
+    return $materias;
+}
+
+/* =========================
+ * FUNCIÓN OBTENER PROFESORES
+ * ========================= */
+function obtenerProfesores() {
+    $conexion = conectarBD();
+
+    $sql = "SELECT cedula, nombre, apellido FROM profesores ORDER BY nombre, apellido";
+    $resultado = $conexion->query($sql);
+
+    if (!$resultado) {
+        die("Error en la consulta: " . $conexion->error);
+    }
+
+    $profesores = [];
+    while ($fila = $resultado->fetch_assoc()) {
+        $profesores[] = $fila;
+    }
+
+    $conexion->close();
+    return $profesores;
+}
+
+/* =========================
+ * FUNCIÓN REGISTRAR INSCRIPCIÓN
+ * ========================= */
+function registrarInscripcion($id_curso, $id_materia, $cedula_profesor) {
+    $conexion = conectarBD();
+
+    $sql = "INSERT INTO inscripciones (id_curso, id_materia, cedula_profesor)
+            VALUES (?, ?, ?)";
 
     $stmt = $conexion->prepare($sql);
     if (!$stmt) {
         die("Error al preparar consulta: " . $conexion->error);
     }
 
-    $stmt->bind_param("i", $id_inscripcion);
+    $stmt->bind_param("iss", $id_curso, $id_materia, $cedula_profesor);
 
     $resultado = $stmt->execute();
 
@@ -80,26 +113,33 @@ function eliminarInscripcion($id_inscripcion) {
 }
 
 /* =========================
- * PROCESAMIENTO DE ACCIONES
+ * PROCESAMIENTO DEL POST
  * ========================= */
 $mensaje = "";
 
-if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['accion']) && $_POST['accion'] === 'eliminar') {
-    $id_inscripcion = intval($_POST['id_inscripcion'] ?? 0);
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
-    if ($id_inscripcion > 0) {
-        if (eliminarInscripcion($id_inscripcion)) {
-            $mensaje = "✅ Inscripción eliminada correctamente.";
+    $id_curso        = intval($_POST['id_cursoX'] ?? 0);
+    $id_materia      = intval($_POST['id_materiaX'] ?? 0);
+    $cedula_profesor = trim($_POST['cedula_profesorX'] ?? '');
+
+    if ($id_curso === 0 || $id_materia === 0 || $cedula_profesor === '') {
+        $mensaje = "⚠️ Todos los campos son obligatorios.";
+    } else {
+        if (registrarInscripcion($id_curso, $id_materia, $cedula_profesor)) {
+            $mensaje = "✅ Inscripción registrada correctamente.";
         } else {
-            $mensaje = "❌ Error al eliminar la inscripción.";
+            $mensaje = "❌ Error al registrar la inscripción.";
         }
     }
 }
 
 /* =========================
- * USO DEL LISTADO
+ * OBTENER DATOS PARA SELECTORES
  * ========================= */
-$inscripciones = listarInscripciones();
+$cursos = obtenerCursos();
+$materias = obtenerMaterias();
+$profesores = obtenerProfesores();
 
 ?>
 
@@ -107,69 +147,57 @@ $inscripciones = listarInscripciones();
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Listado de Inscripciones</title>
+    <title>Registrar Inscripción</title>
     <style>
         body {
             font-family: Arial, sans-serif;
         }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
+        form {
+            width: 500px;
+            margin: 0 auto;
         }
-        .btn-agregar {
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        select, input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            margin-top: 20px;
             padding: 10px 15px;
+            margin-right: 10px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+        }
+        button[type="submit"] {
             background-color: #4CAF50;
             color: white;
-            text-decoration: none;
-            border-radius: 4px;
             font-weight: bold;
         }
-        .btn-agregar:hover {
+        button[type="submit"]:hover {
             background-color: #45a049;
         }
-        table {
-            border-collapse: collapse;
-            width: 100%;
-        }
-        th, td {
-            border: 1px solid #333;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #eee;
+        button[type="reset"] {
+            background-color: #6c757d;
+            color: white;
             font-weight: bold;
         }
-        .btn-editar {
-            padding: 5px 10px;
-            background-color: #2196F3;
-            color: white;
-            text-decoration: none;
-            border-radius: 3px;
-            font-size: 12px;
-        }
-        .btn-editar:hover {
-            background-color: #0b7dda;
-        }
-        .btn-eliminar {
-            padding: 5px 10px;
-            background-color: #f44336;
-            color: white;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-        .btn-eliminar:hover {
-            background-color: #da190b;
+        button[type="reset"]:hover {
+            background-color: #5a6268;
         }
         .mensaje {
-            padding: 10px;
-            margin-bottom: 15px;
-            border-radius: 4px;
+            margin-top: 15px;
             font-weight: bold;
+            padding: 10px;
+            border-radius: 4px;
         }
         .mensaje.exito {
             background-color: #d4edda;
@@ -181,14 +209,14 @@ $inscripciones = listarInscripciones();
             color: #721c24;
             border: 1px solid #f5c6cb;
         }
+        .button-group {
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <h2>Listado de Inscripciones</h2>
-    <a href="registrarInscripciones.php" class="btn-agregar">+ Agregar Inscripción</a>
-</div>
+<h2>Registrar Nueva Inscripción</h2>
 
 <?php if ($mensaje): ?>
     <div class="mensaje <?= strpos($mensaje, '✅') !== false ? 'exito' : 'error' ?>">
@@ -196,40 +224,48 @@ $inscripciones = listarInscripciones();
     </div>
 <?php endif; ?>
 
-<table>
-    <thead>
-        <tr>
-            <th>Curso</th>
-            <th>Materia</th>
-            <th>Profesor</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        <?php if (count($inscripciones) > 0): ?>
-            <?php foreach ($inscripciones as $inscripcion): ?>
-                <tr>
-                    <td><?= htmlspecialchars($inscripcion['curso']) ?></td>
-                    <td><?= htmlspecialchars($inscripcion['materia']) ?></td>
-                    <td><?= htmlspecialchars($inscripcion['profesor_nombre'] . ' ' . $inscripcion['profesor_apellido']) ?></td>
-                    <td>
-                        <a href="editarInscripciones.php?id=<?= $inscripcion['id_inscripcion'] ?>" class="btn-editar">Editar</a>
-                        
-                        <form style="display: inline;" method="POST" onsubmit="return confirm('¿Estás seguro de que deseas eliminar esta inscripción?');">
-                            <input type="hidden" name="accion" value="eliminar">
-                            <input type="hidden" name="id_inscripcion" value="<?= $inscripcion['id_inscripcion'] ?>">
-                            <button type="submit" class="btn-eliminar">Eliminar</button>
-                        </form>
-                    </td>
-                </tr>
+<form method="POST" action="">
+    <label for="id_cursoX">
+        Curso:
+        <select name="id_cursoX" id="id_cursoX" required>
+            <option value="">-- Selecciona un curso --</option>
+            <?php foreach ($cursos as $curso): ?>
+                <option value="<?= $curso['id_curso'] ?>">
+                    <?= htmlspecialchars($curso['descripcion']) ?>
+                </option>
             <?php endforeach; ?>
-        <?php else: ?>
-            <tr>
-                <td colspan="4" style="text-align: center;">No hay inscripciones registradas.</td>
-            </tr>
-        <?php endif; ?>
-    </tbody>
-</table>
+        </select>
+    </label>
+
+    <label for="id_materiaX">
+        Materia:
+        <select name="id_materiaX" id="id_materiaX" required>
+            <option value="">-- Selecciona una materia --</option>
+            <?php foreach ($materias as $materia): ?>
+                <option value="<?= $materia['id_materia'] ?>">
+                    <?= htmlspecialchars($materia['descripcion']) ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+    </label>
+
+    <label for="cedula_profesorX">
+        Profesor:
+        <select name="cedula_profesorX" id="cedula_profesorX" required>
+            <option value="">-- Selecciona un profesor --</option>
+            <?php foreach ($profesores as $profesor): ?>
+                <option value="<?= htmlspecialchars($profesor['cedula']) ?>">
+                    <?= htmlspecialchars($profesor['nombre'] . ' ' . $profesor['apellido']) ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+    </label>
+
+    <div class="button-group">
+        <button type="submit">Registrar</button>
+        <button type="reset">Limpiar</button>
+    </div>
+</form>
 
 </body>
 </html>
