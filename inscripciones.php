@@ -1,6 +1,5 @@
 <?php
 
-
 /* =========================
  * MOSTRAR ERRORES
  * ========================= */
@@ -45,7 +44,7 @@ function listarInscripciones() {
             FROM inscripciones i
             INNER JOIN cursos c ON i.id_curso = c.id_curso
             INNER JOIN materias m ON i.id_materia = m.id_materia
-            INNER JOIN profesores p ON i.id_profesor = p.id_profesor
+            INNER JOIN profesores p ON i.cedula_profesor = p.cedula
             ORDER BY c.descripcion, m.descripcion";
     
     $resultado = $conexion->query($sql);
