@@ -21,6 +21,7 @@ $paginas_permitidas = [
     'libros',
     'materias',
     'profesores',
+    'inscripciones',
     'sincronizar'
 ];
 
@@ -37,6 +38,7 @@ $mapeo_paginas = [
     'libros' => 'libros.php',
     'materias' => 'materias.php',
     'profesores' => 'profesores.php',
+    'inscripciones' => 'inscripciones.php',
     'sincronizar' => 'syncdb.php'
 ];
 
@@ -287,7 +289,7 @@ $mapeo_paginas = [
     <!-- HEADER -->
     <header>
         <div class="header-logo">
-            <img src="assets/logo-maria-serrana.png" alt="Logo Colegio María Serrana">
+            <img src="img/MariaSerrana.jpg" alt="Logo Colegio María Serrana">
         </div>
         <div class="header-content">
             <h1>Sistema de Gestión Escolar</h1>
@@ -338,6 +340,12 @@ $mapeo_paginas = [
                         <span>Libros</span>
                     </a>
                 </li>
+                <li>
+                    <a href="index.php?page=inscripciones" class="<?= $pagina === 'inscripciones' ? 'active' : '' ?>">
+                        <span class="menu-icon">📝</span>
+                        <span>Inscripciones</span>
+                    </a>
+                </li>
                 <li style="border-top: 1px solid #34495e; margin-top: 10px;">
                     <a href="index.php?page=sincronizar" class="<?= $pagina === 'sincronizar' ? 'active' : '' ?>">
                         <span class="menu-icon">🔄</span>
@@ -386,6 +394,12 @@ $mapeo_paginas = [
                             <div class="card-icon">📕</div>
                             <h3>Libros</h3>
                             <p>Gestiona el inventario de libros</p>
+                        </a>
+
+                        <a href="index.php?page=inscripciones" class="card">
+                            <div class="card-icon">📝</div>
+                            <h3>Inscripciones</h3>
+                            <p>Gestiona las inscripciones de cursos</p>
                         </a>
 
                         <a href="index.php?page=sincronizar" class="card">
