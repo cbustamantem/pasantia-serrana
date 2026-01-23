@@ -23,20 +23,43 @@ function conectarBD() {
 }
 
 /* =========================
- * FUNCIÓN REGISTRAR PROFESOR
+ * FUNCIÓN OBTENER PROFESOR POR CÉDULA
  * ========================= */
-function registrarProfesor($nombre, $apellido, $telefono) {
+function obtenerProfesor($cedula) {
     $conexion = conectarBD();
 
-    $sql = "INSERT INTO profesores (nombre, apellido, telefono)
-            VALUES (?, ?, ?)";
+    $sql = "SELECT cedula, nombre, apellido, telefono FROM profesores WHERE cedula = ?";
 
     $stmt = $conexion->prepare($sql);
     if (!$stmt) {
         die("Error al preparar consulta: " . $conexion->error);
     }
 
-    $stmt->bind_param("sss", $nombre, $apellido, $telefono);
+    $stmt->bind_param("i", $cedula);
+    $stmt->execute();
+    $resultado = $stmt->get_result();
+    $profesor = $resultado->fetch_assoc();
+
+    $stmt->close();
+    $conexion->close();
+
+    return $profesor;
+}
+
+/* =========================
+ * FUNCIÓN ACTUALIZAR PROFESOR
+ * ========================= */
+function actualizarProfesor($cedula, $nombre, $apellido, $telefono) {
+    $conexion = conectarBD();
+
+    $sql = "UPDATE profesores SET nombre = ?, apellido = ?, telefono = ? WHERE cedula = ?";
+
+    $stmt = $conexion->prepare($sql);
+    if (!$stmt) {
+        die("Error al preparar consulta: " . $conexion->error);
+    }
+
+    $stmt->bind_param("sssi", $nombre, $apellido, $telefono, $cedula);
 
     $resultado = $stmt->execute();
 
@@ -50,20 +73,34 @@ function registrarProfesor($nombre, $apellido, $telefono) {
  * PROCESAMIENTO DEL POST
  * ========================= */
 $mensaje = "";
+$profesor = null;
 
+// Obtener cédula del profesor desde GET
+$cedula = isset($_GET['cedula']) ? intval($_GET['cedula']) : 0;
+
+if ($cedula > 0) {
+    $profesor = obtenerProfesor($cedula);
+    if (!$profesor) {
+        $mensaje = "❌ Profesor no encontrado.";
+    }
+}
+
+// Procesamiento del formulario
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
+    $cedula   = intval($_POST['cedulaX'] ?? 0);
     $nombre   = trim($_POST['nombreX'] ?? '');
     $apellido = trim($_POST['apellidoX'] ?? '');
     $telefono = trim($_POST['telefonoX'] ?? '');
 
-    if ($nombre === '' || $apellido === '') {
-        $mensaje = "⚠️ Nombre y apellido son obligatorios.";
+    if ($cedula === 0 || $nombre === '' || $apellido === '') {
+        $mensaje = "⚠️ Cédula, nombre y apellido son obligatorios.";
     } else {
-        if (registrarProfesor($nombre, $apellido, $telefono)) {
-            $mensaje = "✅ Profesor registrado correctamente.";
+        if (actualizarProfesor($cedula, $nombre, $apellido, $telefono)) {
+            $mensaje = "✅ Profesor actualizado correctamente.";
+            $profesor = obtenerProfesor($cedula);
         } else {
-            $mensaje = "❌ Error al registrar el profesor.";
+            $mensaje = "❌ Error al actualizar el profesor.";
         }
     }
 }
@@ -74,7 +111,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Registrar Profesor</title>
+    <title>Editar Profesor</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -96,6 +133,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             border-radius: 4px;
             box-sizing: border-box;
         }
+        input[type="number"] {
+            background-color: #f5f5f5;
+        }
         button {
             margin-top: 20px;
             padding: 10px 15px;
@@ -105,12 +145,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             border-radius: 4px;
         }
         button[type="submit"] {
-            background-color: #4CAF50;
+            background-color: #2196F3;
             color: white;
             font-weight: bold;
         }
         button[type="submit"]:hover {
-            background-color: #45a049;
+            background-color: #0b7dda;
         }
         button[type="reset"] {
             background-color: #6c757d;
@@ -146,7 +186,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 </head>
 <body>
 
-<h2>Registrar Profesor</h2>
+<h2>Editar Profesor</h2>
 
 <?php if ($mensaje): ?>
     <div class="mensaje <?= strpos($mensaje, '✅') !== false ? 'exito' : 'error' ?>">
@@ -154,27 +194,36 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     </div>
 <?php endif; ?>
 
-<form method="POST" action="">
-    <label>
-        Nombre:
-        <input type="text" name="nombreX" required>
-    </label>
+<?php if ($profesor): ?>
+    <form method="POST" action="">
+        <label>
+            Cédula (No editable):
+            <input type="number" name="cedulaX" value="<?= htmlspecialchars($profesor['cedula']) ?>" readonly>
+        </label>
 
-    <label>
-        Apellido:
-        <input type="text" name="apellidoX" required>
-    </label>
+        <label>
+            Nombre:
+            <input type="text" name="nombreX" value="<?= htmlspecialchars($profesor['nombre']) ?>" required>
+        </label>
 
-    <label>
-        Teléfono:
-        <input type="text" name="telefonoX" placeholder="Opcional">
-    </label>
+        <label>
+            Apellido:
+            <input type="text" name="apellidoX" value="<?= htmlspecialchars($profesor['apellido']) ?>" required>
+        </label>
 
-    <div class="button-group">
-        <button type="submit">Registrar</button>
-        <button type="reset">Limpiar</button>
-    </div>
-</form>
+        <label>
+            Teléfono:
+            <input type="text" name="telefonoX" value="<?= htmlspecialchars($profesor['telefono'] ?? '') ?>">
+        </label>
+
+        <div class="button-group">
+            <button type="submit">Actualizar</button>
+            <button type="reset">Limpiar</button>
+        </div>
+    </form>
+<?php else: ?>
+    <p>Por favor, selecciona un profesor para editar.</p>
+<?php endif; ?>
 
 </body>
 </html>

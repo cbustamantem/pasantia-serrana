@@ -1,5 +1,6 @@
 <?php
 
+
 /* =========================
  * CONFIGURACIÓN
  * ========================= */
@@ -23,42 +24,53 @@ function conectarBD() {
 }
 
 /* =========================
- * FUNCIÓN LISTAR PROFESORES
+ * FUNCIÓN LISTAR INSCRIPCIONES CON JOINS
  * ========================= */
-function listarProfesores() {
+function listarInscripciones() {
     $conexion = conectarBD();
 
-    $sql = "SELECT cedula, nombre, apellido, telefono FROM profesores ORDER BY nombre, apellido";
+    $sql = "SELECT 
+                i.id_inscripcion,
+                c.descripcion AS curso,
+                m.descripcion AS materia,
+                p.nombre AS profesor_nombre,
+                p.apellido AS profesor_apellido
+            FROM inscripciones i
+            INNER JOIN cursos c ON i.id_curso = c.id_curso
+            INNER JOIN materias m ON i.id_materia = m.id_materia
+            INNER JOIN profesores p ON i.cedula_profesor = p.cedula
+            ORDER BY c.descripcion, m.descripcion";
+    
     $resultado = $conexion->query($sql);
 
     if (!$resultado) {
         die("Error en la consulta: " . $conexion->error);
     }
 
-    $profesores = [];
+    $inscripciones = [];
 
     while ($fila = $resultado->fetch_assoc()) {
-        $profesores[] = $fila;
+        $inscripciones[] = $fila;
     }
 
     $conexion->close();
-    return $profesores;
+    return $inscripciones;
 }
 
 /* =========================
- * FUNCIÓN ELIMINAR PROFESOR POR CÉDULA
+ * FUNCIÓN ELIMINAR INSCRIPCIÓN
  * ========================= */
-function eliminarProfesor($cedula) {
+function eliminarInscripcion($id_inscripcion) {
     $conexion = conectarBD();
 
-    $sql = "DELETE FROM profesores WHERE cedula = ?";
+    $sql = "DELETE FROM inscripciones WHERE id_inscripcion = ?";
 
     $stmt = $conexion->prepare($sql);
     if (!$stmt) {
         die("Error al preparar consulta: " . $conexion->error);
     }
 
-    $stmt->bind_param("i", $cedula);
+    $stmt->bind_param("i", $id_inscripcion);
 
     $resultado = $stmt->execute();
 
@@ -74,13 +86,13 @@ function eliminarProfesor($cedula) {
 $mensaje = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['accion']) && $_POST['accion'] === 'eliminar') {
-    $cedula = intval($_POST['cedula'] ?? 0);
+    $id_inscripcion = intval($_POST['id_inscripcion'] ?? 0);
 
-    if ($cedula > 0) {
-        if (eliminarProfesor($cedula)) {
-            $mensaje = "✅ Profesor eliminado correctamente.";
+    if ($id_inscripcion > 0) {
+        if (eliminarInscripcion($id_inscripcion)) {
+            $mensaje = "✅ Inscripción eliminada correctamente.";
         } else {
-            $mensaje = "❌ Error al eliminar el profesor.";
+            $mensaje = "❌ Error al eliminar la inscripción.";
         }
     }
 }
@@ -88,7 +100,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['accion']) && $_POST['
 /* =========================
  * USO DEL LISTADO
  * ========================= */
-$profesores = listarProfesores();
+$inscripciones = listarInscripciones();
 
 ?>
 
@@ -96,7 +108,7 @@ $profesores = listarProfesores();
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Listado de Profesores</title>
+    <title>Listado de Inscripciones</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -175,8 +187,8 @@ $profesores = listarProfesores();
 <body>
 
 <div class="header">
-    <h2>Listado de Profesores</h2>
-    <a href="registrarProfesores.php" class="btn-agregar">+ Agregar Profesor</a>
+    <h2>Listado de Inscripciones</h2>
+    <a href="registrarInscripciones.php" class="btn-agregar">+ Agregar Inscripción</a>
 </div>
 
 <?php if ($mensaje): ?>
@@ -188,27 +200,25 @@ $profesores = listarProfesores();
 <table>
     <thead>
         <tr>
-            <th>Cédula</th>
-            <th>Nombre</th>
-            <th>Apellido</th>
-            <th>Teléfono</th>
+            <th>Curso</th>
+            <th>Materia</th>
+            <th>Profesor</th>
             <th>Acciones</th>
         </tr>
     </thead>
     <tbody>
-        <?php if (count($profesores) > 0): ?>
-            <?php foreach ($profesores as $profesor): ?>
+        <?php if (count($inscripciones) > 0): ?>
+            <?php foreach ($inscripciones as $inscripcion): ?>
                 <tr>
-                    <td><?= htmlspecialchars($profesor['cedula']) ?></td>
-                    <td><?= htmlspecialchars($profesor['nombre']) ?></td>
-                    <td><?= htmlspecialchars($profesor['apellido']) ?></td>
-                    <td><?= htmlspecialchars($profesor['telefono']) ?></td>
+                    <td><?= htmlspecialchars($inscripcion['curso']) ?></td>
+                    <td><?= htmlspecialchars($inscripcion['materia']) ?></td>
+                    <td><?= htmlspecialchars($inscripcion['profesor_nombre'] . ' ' . $inscripcion['profesor_apellido']) ?></td>
                     <td>
-                        <a href="editarProfesores.php?cedula=<?= urlencode($profesor['cedula']) ?>" class="btn-editar">Editar</a>
+                        <a href="editarInscripciones.php?id=<?= $inscripcion['id_inscripcion'] ?>" class="btn-editar">Editar</a>
                         
-                        <form style="display: inline;" method="POST" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este profesor?');">
+                        <form style="display: inline;" method="POST" onsubmit="return confirm('¿Estás seguro de que deseas eliminar esta inscripción?');">
                             <input type="hidden" name="accion" value="eliminar">
-                            <input type="hidden" name="cedula" value="<?= htmlspecialchars($profesor['cedula']) ?>">
+                            <input type="hidden" name="id_inscripcion" value="<?= $inscripcion['id_inscripcion'] ?>">
                             <button type="submit" class="btn-eliminar">Eliminar</button>
                         </form>
                     </td>
@@ -216,7 +226,7 @@ $profesores = listarProfesores();
             <?php endforeach; ?>
         <?php else: ?>
             <tr>
-                <td colspan="5" style="text-align: center;">No hay profesores registrados.</td>
+                <td colspan="4" style="text-align: center;">No hay inscripciones registradas.</td>
             </tr>
         <?php endif; ?>
     </tbody>

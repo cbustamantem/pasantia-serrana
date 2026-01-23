@@ -1,0 +1,1 @@
+CREATE TABLE utiles (id_util INTEGER AUTO_INCREMENT PRIMARY KEY, descripcion varchar(100));

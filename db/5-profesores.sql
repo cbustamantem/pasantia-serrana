@@ -1,0 +1,1 @@
+CREATE TABLE profesores (cedula INTEGER AUTO_INCREMENT PRIMARY KEY, nombre varchar(100), apellido varchar(100),telefono varchar(100));
